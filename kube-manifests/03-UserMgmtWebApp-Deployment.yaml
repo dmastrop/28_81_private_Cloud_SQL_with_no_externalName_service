@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: usermgmt-webapp
+  labels:
+    app: usermgmt-webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: usermgmt-webapp
+      # this label must be used in the LoadBalancer yaml as well so requests to loadbalancer go to this deployment.
+  template:  
+    metadata:
+      labels: 
+        app: usermgmt-webapp
+    spec:
+      initContainers:
+        - name: init-db
+          image: busybox:1.31
+          command: ['sh', '-c', 'echo -e "Checking for the availability of MySQL Server deployment"; while ! nc -z mysql-externalname-service 3306; do sleep 1; printf "-"; done; echo -e "  >> MySQL DB Server has started";'] 
+          # NOTE: for the initContainer need to have this name "mysql-externalname-service" so that it can ping it prior to bringing up the UserMgmtWebApp container  
+          # this  name is from the externalName-Service yaml file and is also used below in env: vars for DB_HOSTNAME   
+      containers:
+        - name: usermgmt-webapp
+          image: stacksimplify/kube-usermgmt-webapp:1.0.0-MySQLDB
+          imagePullPolicy: Always
+          ports: 
+            - containerPort: 8080           
+          env:
+            - name: DB_HOSTNAME
+              value: "mysql-externalname-service"            
+            - name: DB_PORT
+              value: "3306"            
+            - name: DB_NAME
+              value: "webappdb"            
+            - name: DB_USERNAME
+              value: "root"            
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-db-password
+                  key: db-password   
+
+# NOTES: for the DB_PASSWORD the valueFrom secretKeyRef is the name in the Kubernets-Secrets.yaml "mysql-db-password"
+#  The key is "db-password" also from the Kubernetes-Secrets.yaml.
+
+# For the DB_HOSTNAME the value must be the "mysql-externalname-service" that is specified in the externalName-Service.yaml file
+
+# For DB_NAME this is the name of the schema that we created in databases for the Cloud SQL via the GCE webgui console

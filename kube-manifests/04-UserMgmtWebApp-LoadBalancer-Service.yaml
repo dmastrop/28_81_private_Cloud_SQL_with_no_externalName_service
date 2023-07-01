@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: usermgmt-webapp-lb-service
+  labels: 
+    app: usermgmt-webapp
+    # this name must be used to insure that requests to the loadbalancer go to the UserMgmtWebApp deployment yaml. The same name is used there.
+spec: 
+  type: LoadBalancer
+  selector: 
+    app: usermgmt-webapp
+    # this name must be used to insure that requests to the loadbalancer go to the UserMgmtWebApp deployment yaml. The same name is used there.
+  ports: 
+    - port: 80 # Service Port
+      targetPort: 8080 # Container Port
