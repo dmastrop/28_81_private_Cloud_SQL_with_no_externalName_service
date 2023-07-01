@@ -18,9 +18,10 @@ spec:
       initContainers:
         - name: init-db
           image: busybox:1.31
-          command: ['sh', '-c', 'echo -e "Checking for the availability of MySQL Server deployment"; while ! nc -z mysql-externalname-service 3306; do sleep 1; printf "-"; done; echo -e "  >> MySQL DB Server has started";'] 
+          command: ['sh', '-c', 'echo -e "Checking for the availability of MySQL Server deployment"; while ! nc -z 10.122.0.3 3306; do sleep 1; printf "-"; done; echo -e "  >> MySQL DB Server has started";'] 
           # NOTE: for the initContainer need to have this name "mysql-externalname-service" so that it can ping it prior to bringing up the UserMgmtWebApp container  
           # this  name is from the externalName-Service yaml file and is also used below in env: vars for DB_HOSTNAME   
+          # EDIT:  In this single project we no longer have an externalName service yaml. We need to hardcode the 10.122.0.3 private ip addres of the Cloud SQL instance
       containers:
         - name: usermgmt-webapp
           image: stacksimplify/kube-usermgmt-webapp:1.0.0-MySQLDB
@@ -29,7 +30,9 @@ spec:
             - containerPort: 8080           
           env:
             - name: DB_HOSTNAME
-              value: "mysql-externalname-service"            
+              #value: "mysql-externalname-service"
+              value: 10.122.0.3
+              # in this project need to hardcode the DB_HOSTNAME since we have no externalName service           
             - name: DB_PORT
               value: "3306"            
             - name: DB_NAME
@@ -48,3 +51,6 @@ spec:
 # For the DB_HOSTNAME the value must be the "mysql-externalname-service" that is specified in the externalName-Service.yaml file
 
 # For DB_NAME this is the name of the schema that we created in databases for the Cloud SQL via the GCE webgui console
+
+# EDIT:  In this single project we no longer have an externalName service yaml. We need to hardcode the 10.122.0.3 private ip addres of the Cloud SQL instance
+# this needs to be done in the initContainer definition as well as the env: variable DB_HOSTNAME
